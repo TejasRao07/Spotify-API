@@ -52,5 +52,5 @@ def get_data(authtoken : str, search_type : str, search_param : str = None ) -> 
     
 token = getToken(tokenURL, clientID, clientSecret)
 print(f"Token : {token}")
-result = get_data(token, "artists", "4xRYI6VqpkE3UwrDrAZL8L")
+result = get_data(token, "tracks", "4cxMGhkinTocPSVVKWIw0d")
 print(result)
