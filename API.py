@@ -6,14 +6,13 @@ import json
 
 class SpotifyAPI:
     def __init__(self):
-        load_dotenv()                                               # Load environment variables from .env file
-        self.tokenURL = "https://accounts.spotify.com/api/token"    # Token auth endpoint
-        self.clientID = os.getenv("clientID")                       # client ID of spotify dev account
-        self.clientSecret = os.getenv("clientSecret")               # client secret key of spotify dev account
-        self.base_URL = "https://api.spotify.com/v1/"               # Data query base URL /artists or /playlist for actual endpoint 
+        load_dotenv()  # Load environment variables from .env file
+        self.tokenURL = "https://accounts.spotify.com/api/token"
+        self.clientID = os.getenv("clientID")
+        self.clientSecret = os.getenv("clientSecret")
+        self.base_URL = "https://api.spotify.com/v1/"
         
     def get_token(self) -> str:
-        '''Authenticate user with client ID and key to obtain the Oauth token'''
         authString = f"{self.clientID}:{self.clientSecret}"
         authBytes = authString.encode("utf-8")
         authBase64 = str(base64.b64encode(authBytes), "utf-8")
@@ -31,14 +30,9 @@ class SpotifyAPI:
         return json_result["access_token"]
     
     def generate_auth_header(self, token: str) -> dict:
-        '''Function to generate header with auth token'''
         return {"Authorization": "Bearer " + token}
     
     def get_data(self, token: str, search_type: str, search_param: str = None) -> dict:
-         '''token : str -> auth token
-        search_type : str -> object type from [artists, tracks, albums, genres, categories]
-        search_param : str -> object ID/URI 
-        '''
         query_URL = self.base_URL + search_type + '/' + search_param
         headers = self.generate_auth_header(token)
         
@@ -48,7 +42,7 @@ class SpotifyAPI:
         
         return json_result
 
-# example usage
+
 spotify = SpotifyAPI()
 token = spotify.get_token()
 print(f"Token: {token}")
