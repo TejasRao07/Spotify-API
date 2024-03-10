@@ -61,7 +61,8 @@ def update_track_attributes(G : nx.Graph, track_details : dict) -> None :
             new_dict = {
                 track["uri"]: {
                     "popularity": track["popularity"],
-                    "duration_ms": track["duration_ms"]
+                    "duration_ms": track["duration_ms"],
+                    "arist_URI" : track['artists'][0]['uri']
                 }
             }
             track_details_dict.update(new_dict)
@@ -106,4 +107,39 @@ def update_audio_attributes(G : nx.Graph, audio_features : dict) -> None :
     
     return
 
+def get_artist_details(batches : list, api_object, token : str) -> dict :
+    '''
+    Take a batch as input and query the 'artists' endpoint to get genre and other artist details
+    token : str -> Oauth token
+    return : dict with audio features for all tracks in the batch
+    '''
+    if(len(batches) == 0) :
+        return None
     
+    features = []
+    for batch in batches :
+        try:
+            query = "ids=" + batch
+            data = api_object.get_data(token, 'artists', query, batch=True)
+            print(f"len data : {len(data['artists'])}")
+            features.append(data)
+        except Exception as err:
+            print(f"An unexpected error occurred: {err}")  # Handle other unexpected errors
+    print(f"artist detail : {features[0]["artists"]}")
+    return features
+
+def update_artist_details(G : nx.Graph, artist_details : dict) -> None :
+    artist_details_dict = {}
+    for artists in artist_details :
+        for artist in artists['artists'] :
+            new_dict = {
+                artist["uri"]: {
+                    "artist_popularity": artist["popularity"],
+                    "genre": artist["genre"]
+                }
+            }
+            artist_details_dict.update(new_dict)
+            
+    nx.set_node_attributes(G, artist_details_dict)
+    
+    return
