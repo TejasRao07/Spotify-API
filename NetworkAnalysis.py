@@ -2,8 +2,10 @@
 import pickle
 import matplotlib.pyplot as plt
 import networkx as nx
+import community
 import pandas as pd
 import numpy as np
+from networkx.algorithms.community import girvan_newman
 
 class NetworkAnalysis : 
     def __init__(self, pickle_file, song_data) -> None:
@@ -56,6 +58,19 @@ class NetworkAnalysis :
 
     def save_graph(self) -> None :
         # Write networkX graph into a gephi readable file format - gexf/ graphML
+        # Convert all node attributes to strings
+        for node, attrs in self.G.nodes(data=True):
+            for attr, value in attrs.items():
+                # Convert each attribute value to string
+                if(isinstance(value, list)) :
+                    self.G.nodes[node][attr] = str(value)
+
+        # Convert all edge attributes to strings
+        for u, v, attrs in self.G.edges(data=True):
+            for attr, value in attrs.items():
+                # Convert each attribute value to string
+                if(isinstance(value, list)) :
+                    self.G[u][v][attr] = str(value)
         nx.write_gexf(self.G, "smallGraph.gexf")
         nx.write_graphml(self.G, "smallGraph.graphml")
     
@@ -63,8 +78,6 @@ class NetworkAnalysis :
         # Get connected components in the network
         CCs = list(nx.connected_components(self.G))
         print(f"Number of CCs : {len(CCs)}")
-        for i, cc in enumerate(CCs) :
-            print(f"CC {i} : {cc}")
     
     def k_core_analysis(self) -> None :
         #Get k-core metrics
@@ -82,16 +95,23 @@ class NetworkAnalysis :
 
     def plot_centrality_measures(self) -> None:
             """Freeman's centrality measures and creating histograms for each centrality measure."""
-            degree_centrality = list(nx.degree_centrality(self.G).values())
-            betweenness_centrality = list(nx.betweenness_centrality(self.G).values())
-            closeness_centrality = list(nx.closeness_centrality(self.G).values())
-            eigenvector_centrality = list(nx.eigenvector_centrality(self.G).values())
+            degree_centrality = nx.degree_centrality(self.G)
+            nx.set_node_attributes(self.G, degree_centrality, "Degree Centrality")
+            
+            betweenness_centrality = nx.betweenness_centrality(self.G)
+            nx.set_node_attributes(self.G, betweenness_centrality, "Betweenness Centrality")
+            
+            closeness_centrality = nx.closeness_centrality(self.G)
+            nx.set_node_attributes(self.G, closeness_centrality, "Closeness Centrality")
+            
+            eigenvector_centrality = nx.eigenvector_centrality(self.G)
+            nx.set_node_attributes(self.G, eigenvector_centrality, "Eigenvector Centrality")
 
             fig, axs = plt.subplots(2, 2, figsize=(14, 10))
-            self._plot_histogram(axs[0, 0], degree_centrality, 'Degree Centrality', 'skyblue')
-            self._plot_histogram(axs[0, 1], betweenness_centrality, 'Betweenness Centrality', 'lightgreen')
-            self._plot_histogram(axs[1, 0], closeness_centrality, 'Closeness Centrality', 'lightcoral')
-            self._plot_histogram(axs[1, 1], eigenvector_centrality, 'Eigenvector Centrality', 'wheat')
+            self._plot_histogram(axs[0, 0], list(degree_centrality.values()), 'Degree Centrality', 'skyblue')
+            self._plot_histogram(axs[0, 1], list(betweenness_centrality.values()), 'Betweenness Centrality', 'lightgreen')
+            self._plot_histogram(axs[1, 0], list(closeness_centrality.values()), 'Closeness Centrality', 'lightcoral')
+            self._plot_histogram(axs[1, 1], list(eigenvector_centrality.values()), 'Eigenvector Centrality', 'wheat')
             plt.tight_layout()
             plt.show()
 
@@ -118,6 +138,59 @@ class NetworkAnalysis :
             ax.text(median_val, ax.get_ylim()[1]*0.85, f"Median: {median_val:.5f}", color='m')
             # ax.text(mode_val, ax.get_ylim()[1]*0.75, 'Mode', ha='right', color='g') # If you decide to include mode
 
+    def modularity(self, resolution : float = 1.0) :
+        '''
+        partition the graph and calculate modularity classes
+        resolution : float -> lower the resolution higher the number of communities
+        '''
+        partition = community.best_partition(self.G, resolution)
+        print(f"Type : {type(partition)}")
+        print(f"parition : {partition}")
+        modularity = community.modularity(self.G, partition)
+        nx.set_node_attributes(self.G, modularity, "Modularity")
+        return modularity
+    
+    def eccentricity(self) :
+        '''
+        Calculate eccentricity and update it as a node attribute
+        '''
+        eccentricity = nx.eccentricity(self.G)
+        nx.set_node_attributes(self.G, eccentricity, "Eccentricity")
+        return eccentricity
+    
+    def pageRank(self, alpha : float = 0.85, tol : float = 1e-3, max_iter : int = 100) :
+        '''Calculate pagerank for all nodes in the network
+        alpha : float -> damping paramter, default = 0.85
+        tol : float -> Error tolerance used to check convergence in power method solver.
+        max_iter : int -> Maximum number of iterations in power method eigenvalue solver.
+        '''
+        pageRank = nx.pagerank(self.G, alpha=alpha, tol=tol, max_iter=max_iter)
+        nx.set_node_attributes(self.G, pageRank, "PageRank")
+        
+    def girvan_newman(self, num_communities = 10) -> list :
+        """
+        Implement the Girvan-Newman algorithm for community detection.
+        
+        Parameters:
+        - G: A NetworkX graph.
+        - num_communities: Desired number of communities. The algorithm stops when this number is reached.
+        
+        Returns:
+        - A list of sets, where each set contains the nodes in one community.
+        """
+        G_copy = self.G.copy()
+        communities = []
+        while(len(communities) < num_communities) :
+            edge_betweeness = nx.edge_betweenness_centrality(G_copy)
+            max_edge = max(edge_betweeness, key=edge_betweeness.get)
+            G_copy.remove_edge(*max_edge)
+            
+            communities = [list(c) for c in nx.connected_components(G_copy)]
+            
+            if(G_copy.number_of_edges() == 0 ) :
+                break
+        
+        return communities
 
 # %%
 # spotify = NetworkAnalysis(r".\Small Dataset\small_graph.pickle", r".\Small Dataset\song_data_smaller.csv" )
@@ -135,4 +208,7 @@ class NetworkAnalysis :
 # print(degree_centrality)
 # avg_degree = spotify.avgDegree()
 # print(f"Avg Degree : {avg_degree}")
+# modularity = spotify.modularity(resolution = 1)
+# eccentricity = spotify.eccentricity()
+# spotify.display_nodes()
 # %%
