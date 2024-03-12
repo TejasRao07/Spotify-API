@@ -19,10 +19,14 @@ class NetworkAnalysis :
         song_name_dict = dict(zip(song_data["song_id"], song_data["song_name"]))
         artist_name_dict = dict(zip(song_data["song_id"], song_data["artist_name"]))
         album_name_dict = dict(zip(song_data["song_id"], song_data["album_name"]))
+        artist_URI_dict = dict(zip(song_data["song_id"], song_data["artist_uri"]))
+        album_URI_dict = dict(zip(song_data["song_id"], song_data["album_uri"]))
 
         nx.set_node_attributes(self.G, song_name_dict, "Track Name")
         nx.set_node_attributes(self.G, artist_name_dict, "Artist Name")
         nx.set_node_attributes(self.G, album_name_dict, "Album Name")
+        nx.set_node_attributes(self.G, artist_URI_dict, "Artist URI")
+        nx.set_node_attributes(self.G, album_URI_dict, "Album URI")
 
     def display_nodes(self) :
         for node, attrs in self.G.nodes(data = True) :
