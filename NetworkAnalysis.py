@@ -6,16 +6,17 @@ import community
 import pandas as pd
 import numpy as np
 from networkx.algorithms.community import girvan_newman
+from cdlib import algorithms
 
 class NetworkAnalysis : 
     def __init__(self, pickle_file, song_data) -> None:
-        # Load smaller graph
-        with open(r".\Small Dataset\small_graph.pickle", 'rb') as f :
+        # Load graph
+        with open(pickle_file, 'rb') as f :
             self.G = pickle.load(f)
             
         # Reading the song G file to enrich network nodes with song name.
         # Node names are the song URI which is not easily readable
-        song_data = pd.read_csv(r".\Small Dataset\song_data_smaller.csv")
+        song_data = pd.read_csv(song_data)
         song_name_dict = dict(zip(song_data["song_id"], song_data["song_name"]))
         artist_name_dict = dict(zip(song_data["song_id"], song_data["artist_name"]))
         album_name_dict = dict(zip(song_data["song_id"], song_data["album_name"]))
@@ -40,10 +41,10 @@ class NetworkAnalysis :
         return sum(dict(self.G.degree()).values()) / self.G.number_of_nodes()
     
     def avg_path_length(self) -> float :
-        return nx.average_shortest_path_length(G) 
+        return nx.average_shortest_path_length(self.G) 
     
     def avgClusteringCoefficient(self) -> float:
-        return nx.average_clustering(G)
+        return nx.average_clustering(self.G)
     
     def draw_network(self) -> None : 
         #print out attributes of each node
@@ -75,8 +76,8 @@ class NetworkAnalysis :
                 # Convert each attribute value to string
                 if(isinstance(value, list)) :
                     self.G[u][v][attr] = str(value)
-        nx.write_gexf(self.G, "smallGraph.gexf")
-        nx.write_graphml(self.G, "smallGraph.graphml")
+        nx.write_gexf(self.G, "bigGraph.gexf")
+        nx.write_graphml(self.G, "bigGraph.graphml")
     
     def get_connected_components(self) -> None :
         # Get connected components in the network
@@ -154,6 +155,7 @@ class NetworkAnalysis :
         nx.set_node_attributes(self.G, modularity, "Modularity")
         return modularity
     
+    
     def eccentricity(self) :
         '''
         Calculate eccentricity and update it as a node attribute
@@ -195,24 +197,33 @@ class NetworkAnalysis :
                 break
         
         return communities
+    
+    def get_louvain(self, resolution = 1) -> list :
+        """
+        Implement the Girvan-Newman algorithm for community detection.
+        
+        Parameters:
+        - G: A NetworkX graph.
+        - resolution: Desired number of communities. Increase for fewer and decrease for more communities
+        
+        Returns:
+        - A list of sets, where each set contains the nodes in one community.
+        """
+        communities_dict = {}
+        louvain_communities = nx.community.louvain_communities(self.G, resolution=resolution)
+        for index, item in enumerate(louvain_communities) :
+            for track in item :
+                newDict = {track : index}
+                communities_dict.update(newDict)
+                
+        nx.set_node_attributes(self.G, communities_dict, "Modularity")
+        
+        return nx.community.louvain_communities(self.G, resolution=resolution)
 
 # %%
 # spotify = NetworkAnalysis(r".\Small Dataset\small_graph.pickle", r".\Small Dataset\song_data_smaller.csv" )
+# comms = spotify.get_louvain(resolution=1)
+# print(f"comms : {comms}")
 # spotify.draw_network()
-# spotify.get_connected_components()
-# spotify.plot_centrality_measures()
-# diameter = spotify.diameter()
-# print(f"Network Diameter : {diameter}")
-# avgPathLength = spotify.avg_path_length()
-# print(f"Avg Path Length : {avgPathLength}")
-# avgClustering = spotify.avgClusteringCoefficient()
-# print(f"Avg Clustering : {avgClustering}")
-# # %%
-# degree_centrality = nx.degree_centrality(spotify.G)
-# print(degree_centrality)
-# avg_degree = spotify.avgDegree()
-# print(f"Avg Degree : {avg_degree}")
-# modularity = spotify.modularity(resolution = 1)
-# eccentricity = spotify.eccentricity()
 # spotify.display_nodes()
 # %%

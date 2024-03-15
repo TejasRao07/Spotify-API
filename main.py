@@ -1,28 +1,30 @@
 # %%
+import sys 
+sys.dont_write_bytecode = True
+
 import json
 from API import SpotifyAPI
 from NetworkAnalysis import NetworkAnalysis
 from enrich import *
 import networkx as nx
 
+
 # %%
 spotify = SpotifyAPI()
 token = spotify.get_token()
 print(f"Token: {token}")
-# result = spotify.get_data(token, "tracks", "4cxMGhkinTocPSVVKWIw0d")
-# print(result)
 
 # %%
-small_graph = NetworkAnalysis(r".\Small Dataset\small_graph.pickle", r".\Small Dataset\song_data_smaller.csv")
+small_graph = NetworkAnalysis(r".\Big Dataset\bigger_graph.pickle", r".\Big Dataset\song_data_bigger.csv")
+louvain_communities = small_graph.get_louvain(resolution=1)
 small_graph.get_connected_components()
+# %%
 small_graph.plot_centrality_measures()
-small_graph.eccentricity()
+eccentricity = small_graph.eccentricity()
 small_graph.pageRank(alpha=0.85, tol=1e-4, max_iter=500)
-eccentricity = diameter = small_graph.diameter()
-print(f"eccentricity : {eccentricity}")
-# gn_communities = small_graph.girvan_newman(5)
-# print(f"Girvan - Newman : {gn_communities}")
-
+diameter = small_graph.diameter()
+# print(f"eccentricity : {eccentricity}")
+# print("Start API")
 # %%
 # Enrich track nodes with API
 #Split the nodes into batches for faster querying rather than querying each URI
@@ -52,3 +54,5 @@ small_graph.display_nodes()
 
 small_graph.save_graph()
 # # %%
+ 
+# %%
