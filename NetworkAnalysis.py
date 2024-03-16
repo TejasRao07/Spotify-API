@@ -6,7 +6,7 @@ import community
 import pandas as pd
 import numpy as np
 from networkx.algorithms.community import girvan_newman
-from cdlib import algorithms
+
 
 class NetworkAnalysis : 
     def __init__(self, pickle_file, song_data) -> None:
@@ -76,8 +76,8 @@ class NetworkAnalysis :
                 # Convert each attribute value to string
                 if(isinstance(value, list)) :
                     self.G[u][v][attr] = str(value)
-        nx.write_gexf(self.G, "bigGraph.gexf")
-        nx.write_graphml(self.G, "bigGraph.graphml")
+        nx.write_gexf(self.G, "smallGraph.gexf")
+        nx.write_graphml(self.G, "smallGraph.graphml")
     
     def get_connected_components(self) -> None :
         # Get connected components in the network
@@ -142,19 +142,6 @@ class NetworkAnalysis :
             ax.text(mean_val, ax.get_ylim()[1]*0.95, f"Mean: {mean_val:.5f}", ha='right', color='k')
             ax.text(median_val, ax.get_ylim()[1]*0.85, f"Median: {median_val:.5f}", color='m')
             # ax.text(mode_val, ax.get_ylim()[1]*0.75, 'Mode', ha='right', color='g') # If you decide to include mode
-
-    def modularity(self, resolution : float = 1.0) :
-        '''
-        partition the graph and calculate modularity classes
-        resolution : float -> lower the resolution higher the number of communities
-        '''
-        partition = community.best_partition(self.G, resolution)
-        print(f"Type : {type(partition)}")
-        print(f"parition : {partition}")
-        modularity = community.modularity(self.G, partition)
-        nx.set_node_attributes(self.G, modularity, "Modularity")
-        return modularity
-    
     
     def eccentricity(self) :
         '''
