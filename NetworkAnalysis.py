@@ -76,8 +76,15 @@ class NetworkAnalysis :
                 # Convert each attribute value to string
                 if(isinstance(value, list)) :
                     self.G[u][v][attr] = str(value)
-        nx.write_gexf(self.G, "smallGraph.gexf")
-        nx.write_graphml(self.G, "smallGraph.graphml")
+        nx.write_gexf(self.G, "bigGraph.gexf")
+        nx.write_graphml(self.G, "bigGraph.graphml")
+        
+    def to_dataframe(self) -> pd.DataFrame :
+        df = pd.DataFrame.from_dict(dict(self.G.nodes(data=True)), orient='index')
+        df = df.reset_index()
+        df.rename(columns={'index': 'Track URI'}, inplace=True)
+        df.to_csv('./BigGraphData.csv')
+        return df
     
     def get_connected_components(self) -> None :
         # Get connected components in the network
