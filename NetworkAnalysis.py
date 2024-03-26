@@ -194,7 +194,7 @@ class NetworkAnalysis :
     
     def get_louvain(self, resolution = 1) -> list :
         """
-        Implement the Girvan-Newman algorithm for community detection.
+        Implement the louvain algorithm for community detection.
         
         Parameters:
         - G: A NetworkX graph.
