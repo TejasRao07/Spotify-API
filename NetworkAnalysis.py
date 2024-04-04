@@ -6,9 +6,11 @@ import community
 import pandas as pd
 import numpy as np
 from networkx.algorithms.community import girvan_newman
+from cdlib import algorithms
 
 
 class NetworkAnalysis : 
+    
     def __init__(self, pickle_file, song_data) -> None:
         # Load graph
         with open(pickle_file, 'rb') as f :
@@ -29,22 +31,28 @@ class NetworkAnalysis :
         nx.set_node_attributes(self.G, artist_URI_dict, "Artist URI")
         nx.set_node_attributes(self.G, album_URI_dict, "Album URI")
 
+
     def display_nodes(self) :
         for node, attrs in self.G.nodes(data = True) :
             print(f"Node : {node}\nattrs : {attrs}")
     
+    
     def diameter(self) -> int :
         return nx.diameter(self.G)
+    
     
     def avgDegree(self) -> int :
         # Calculate the average degree
         return sum(dict(self.G.degree()).values()) / self.G.number_of_nodes()
     
+    
     def avg_path_length(self) -> float :
         return nx.average_shortest_path_length(self.G) 
     
+    
     def avgClusteringCoefficient(self) -> float:
         return nx.average_clustering(self.G)
+    
     
     def draw_network(self) -> None : 
         #print out attributes of each node
@@ -60,6 +68,7 @@ class NetworkAnalysis :
                 print(f"u: {u}, v: {v}, attr: {attr}, val: {self.G[u][v][attr]}")
                 if isinstance(value, list):
                     self.G[u][v][attr] = str(value)
+
 
     def save_graph(self) -> None :
         # Write networkX graph into a gephi readable file format - gexf/ graphML
@@ -79,6 +88,7 @@ class NetworkAnalysis :
         nx.write_gexf(self.G, "bigGraph.gexf")
         nx.write_graphml(self.G, "bigGraph.graphml")
         
+        
     def to_dataframe(self) -> pd.DataFrame :
         df = pd.DataFrame.from_dict(dict(self.G.nodes(data=True)), orient='index')
         df = df.reset_index()
@@ -86,10 +96,12 @@ class NetworkAnalysis :
         df.to_csv('./BigGraphData.csv')
         return df
     
+    
     def get_connected_components(self) -> None :
         # Get connected components in the network
         CCs = list(nx.connected_components(self.G))
         print(f"Number of CCs : {len(CCs)}")
+    
     
     def k_core_analysis(self) -> None :
         #Get k-core metrics
@@ -104,6 +116,7 @@ class NetworkAnalysis :
         plt.ylabel("No. Of Nodes in k-core")
         plt.grid()
         plt.show()
+
 
     def plot_centrality_measures(self) -> None:
             """Freeman's centrality measures and creating histograms for each centrality measure."""
@@ -126,6 +139,7 @@ class NetworkAnalysis :
             self._plot_histogram(axs[1, 1], list(eigenvector_centrality.values()), 'Eigenvector Centrality', 'wheat')
             plt.tight_layout()
             plt.show()
+
 
     def _plot_histogram(self, ax, data, title, color):
             """Helper function to plot histograms for centrality measures."""
@@ -150,6 +164,7 @@ class NetworkAnalysis :
             ax.text(median_val, ax.get_ylim()[1]*0.85, f"Median: {median_val:.5f}", color='m')
             # ax.text(mode_val, ax.get_ylim()[1]*0.75, 'Mode', ha='right', color='g') # If you decide to include mode
     
+    
     def eccentricity(self) :
         '''
         Calculate eccentricity and update it as a node attribute
@@ -157,6 +172,7 @@ class NetworkAnalysis :
         eccentricity = nx.eccentricity(self.G)
         nx.set_node_attributes(self.G, eccentricity, "Eccentricity")
         return eccentricity
+    
     
     def pageRank(self, alpha : float = 0.85, tol : float = 1e-3, max_iter : int = 100) :
         '''Calculate pagerank for all nodes in the network
@@ -166,6 +182,7 @@ class NetworkAnalysis :
         '''
         pageRank = nx.pagerank(self.G, alpha=alpha, tol=tol, max_iter=max_iter)
         nx.set_node_attributes(self.G, pageRank, "PageRank")
+        
         
     def girvan_newman(self, num_communities = 10) -> list :
         """
@@ -192,6 +209,7 @@ class NetworkAnalysis :
         
         return communities
     
+    
     def get_louvain(self, resolution = 1) -> list :
         """
         Implement the louvain algorithm for community detection.
@@ -210,9 +228,53 @@ class NetworkAnalysis :
                 newDict = {track : index}
                 communities_dict.update(newDict)
                 
-        nx.set_node_attributes(self.G, communities_dict, "Modularity")
+        nx.set_node_attributes(self.G, communities_dict, "Louvain Community")
         
-        return nx.community.louvain_communities(self.G, resolution=resolution)
+        return louvain_communities
+    
+    
+    def walktrap(self) -> list :
+        """
+        Implement the walktrap algorithm for community detection.
+        
+        Parameters:
+        - G: A NetworkX graph.
+        
+        Returns:
+        - A list of sets, where each set contains the nodes in one community.
+        """
+        communities_dict = {}
+        walktrap_communities = algorithms.walktrap(self.G)
+        for index, item in enumerate(walktrap_communities.communities) :
+            for track in item :
+                newDict = {track : index}
+                communities_dict.update(newDict)
+                
+        nx.set_node_attributes(self.G, communities_dict, "Walktrap Community")
+        
+        return walktrap_communities.communities
+    
+    
+    def infomap(self) -> list :
+        """
+        Implement the Structural algorithm(infomap) for community detection.
+        
+        Parameters:
+        - G: A NetworkX graph.
+        
+        Returns:
+        - A list of sets, where each set contains the nodes in one community.
+        """
+        communities_dict = {}
+        infomap_communities = algorithms.infomap(self.G)
+        for index, item in enumerate(infomap_communities.communities) :
+            for track in item :
+                newDict = {track : index}
+                communities_dict.update(newDict)
+                
+        nx.set_node_attributes(self.G, communities_dict, "Infomap Community")
+        
+        return infomap_communities.communities
 
 # %%
 # spotify = NetworkAnalysis(r".\Small Dataset\small_graph.pickle", r".\Small Dataset\song_data_smaller.csv" )
