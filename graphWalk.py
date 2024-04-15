@@ -1,6 +1,7 @@
 import networkx as nx
 import random
 import numpy as np
+import pandas as pd
 from sklearn.metrics.pairwise import cosine_similarity
 
 '''Function for the graph walk, takes a song as input and performs a graph walk based on the
@@ -33,8 +34,16 @@ def cosine_sim(G : nx.graph, u : nx.nodes, v : nx.nodes, attributes : list) -> f
     
     vec1 = np.array(vec1).reshape(1, -1)
     vec2 = np.array(vec2).reshape(1, -1)
-    
     return cosine_similarity(vec1, vec2)[0][0]
+
+
+def jaccard_similarity(list1 : list, list2 : list) -> float:
+    set1, set2 = set(list1), set(list2)
+    intersection = len(set1.intersection(set2))
+    union = len(set1.union(set2))
+    print(f"intersection : {intersection}")
+    print(f"union : {union}")
+    return intersection / union
 
 
 def getRecommendation(G : nx.graph, current_track : nx.nodes, prev_tracks : list, teleport : float = 0.1, context : str = False, attributes : list = ['popularity']) -> nx.nodes :
@@ -80,7 +89,8 @@ def getRecommendation(G : nx.graph, current_track : nx.nodes, prev_tracks : list
             elif(edgeWeight == maxEdgeweight) :
                 candidates.append(neighbour)
     
-    print(f"u : {current_track} | v : {candidates[0]} | Cos similarity : {maxSimilarity}")
+    if(len(candidates)) :
+        print(f"u : {current_track} | v : {candidates[0]} | Cos similarity : {maxSimilarity}")
 
     return random.choice(candidates) if candidates else None
 
@@ -100,12 +110,12 @@ def graphWalk(G : nx.Graph, current_track : nx.nodes, walk_length : int = 10, te
     recommendations[current_track] = G.nodes[current_track]
     played_tracks = []
     for _ in range(walk_length) :
-        print(f"Current Track : {current_track}")
+        # print(f"Current Track : {current_track}")
         if(current_track == None) :
             break 
         next_track = getRecommendation(G, current_track, played_tracks, teleport=teleport, context=context, attributes=attributes)
         if(next_track == None) :
-            next_track = random.choice(G.nodes())
+            next_track = random.choice(list(G.nodes()))
         
         played_tracks.append(next_track)
         if(len(played_tracks) > walk_length) :
@@ -115,5 +125,5 @@ def graphWalk(G : nx.Graph, current_track : nx.nodes, walk_length : int = 10, te
         current_track = next_track
     
     return recommendations
-    
+
  

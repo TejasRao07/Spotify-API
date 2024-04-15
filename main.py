@@ -8,8 +8,7 @@ import pandas as pd
 from API import SpotifyAPI
 from NetworkAnalysis import NetworkAnalysis
 import enrich
-from graphWalk import graphWalk
-import context_recommendation
+from graphWalk import graphWalk, jaccard_similarity
 
 
 # %%
@@ -18,18 +17,20 @@ token = spotify.get_token()
 print(f"Token: {token}")
 
 # %%
-# spotifyNetwork = NetworkAnalysis(r".\Big Dataset\bigger_graph.pickle", r".\Big Dataset\song_data_bigger.csv")
-spotifyNetwork = NetworkAnalysis(r".\Small Dataset\small_graph.pickle", r".\Small Dataset\song_data_smaller.csv")
-louvain_communities = spotifyNetwork.get_louvain(resolution=1)
-spotifyNetwork.get_connected_components()
+spotifyNetwork = NetworkAnalysis(r".\Big Dataset\bigger_graph.pickle", r".\Big Dataset\song_data_bigger.csv")
+# spotifyNetwork = NetworkAnalysis(r".\Small Dataset\small_graph.pickle", r".\Small Dataset\song_data_smaller.csv")
+louvain_communities = spotifyNetwork.get_louvain(resolution=0.8)
+walktrap_communities = spotifyNetwork.walktrap()
+# infomap_communities = spotifyNetwork.infomap()
 # %%
+spotifyNetwork.get_connected_components()
 spotifyNetwork.plot_centrality_measures()
-# eccentricity = small_graph.eccentricity()
-# small_graph.pageRank(alpha=0.85, tol=1e-4, max_iter=500)
+eccentricity = spotifyNetwork.eccentricity()
+spotifyNetwork.pageRank(alpha=0.85, tol=1e-4, max_iter=500)
 print("Start API")
 # %%
 # Enrich track nodes with API
-#Split the nodes into batches for faster querying rather than querying each URI
+# Split the nodes into batches for faster querying rather than querying each URI
 nodeBatches = enrich.node_batch(spotifyNetwork.G, 50, type = "tracks")
 
 #Get track details and update node attributes
@@ -51,23 +52,21 @@ top_genres = top_20_keys = {key : value for key, value in sorted(all_genres.item
 enrich.update_artist_details(spotifyNetwork.G, artist_details, list(top_genres))
 
 # %%
-# spotifyNetwork.display_nodes()
-# # spotifyNetwork.save_graph()
-# df = spotifyNetwork.to_dataframe()
+spotifyNetwork.display_nodes()
+spotifyNetwork.save_graph()
+df = spotifyNetwork.to_dataframe()
 # print(df)
 
-# %%
-attributes = ['popularity', 'acousticness', 'danceability', 'energy', 'instrumentalness', 'liveness', 'loudness', 'speechiness', 'tempo', 'valence', 'artist_popularity']
-recommendations = graphWalk(spotifyNetwork.G, "spotify:track:7o2CTH4ctstm8TNelqjb51", walk_length=20, context=True, attributes=attributes)
-print(f"Length : {len(recommendations)}")
-for node, attr in recommendations.items() :
-    print(f"Track : {node}")
-    print(f"Attrs : {attr}")
-    
-# %%
-# import context_recommendation
+# # %%
 # attributes = ['popularity', 'acousticness', 'danceability', 'energy', 'instrumentalness', 'liveness', 'loudness', 'speechiness', 'tempo', 'valence', 'artist_popularity']
-# sim = context_recommendation.cosine_sim(spotifyNetwork.G, 'spotify:track:55OdqrG8WLmsYyY1jijD9b', 'spotify:track:4w7yrP4RAeeyhfG9nJqQvS', attributes=attributes)
-# print(f"Sim : {sim}")
+attributes = ['danceability', 'energy', 'speechiness', 'loudness', 'valence']
+content_based_recommendations = graphWalk(spotifyNetwork.G, "spotify:track:6O6M7pJLABmfBRoGZMu76Y", walk_length=20, teleport = 0.0001, context=True, attributes=attributes)
+occurrence_based_recommendations = graphWalk(spotifyNetwork.G, "spotify:track:6O6M7pJLABmfBRoGZMu76Y", walk_length=20, teleport = 0.0001, context=False, attributes=attributes)
+jaccard_sim = jaccard_similarity(content_based_recommendations, occurrence_based_recommendations)
+print(f"Jaccard Sim : {jaccard_sim}")
 
-# %%
+# print(f"Length : {len(recommendations)}")
+# for node, attr in recommendations.items() :
+#     print(f"Track : {node}")
+#     print(f"Attrs : {attr}")
+    
